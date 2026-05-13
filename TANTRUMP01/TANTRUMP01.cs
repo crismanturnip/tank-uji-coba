@@ -6,8 +6,11 @@ using Robocode.TankRoyale.BotApi.Events;
 public class TANTRUMP01 : Bot
 {
     private const double WallMargin = 95;
+    private const double DangerDistance = 300;
     private const double PreferredMinDistance = 230;
     private const double PreferredMaxDistance = 470;
+    private const double RadarSweepDegrees = 45;
+    private const double EscapeDistance = 140;
     private const int TargetMemoryTurns = 24;
 
     private readonly Random random = new Random();
@@ -36,6 +39,7 @@ public class TANTRUMP01 : Bot
         MaxSpeed = 7;
         GunTurnRate = 20;
         RadarTurnRate = 45;
+        SetTurnRadarRight(RadarSweepDegrees);
 
         while (IsRunning)
         {
@@ -65,6 +69,7 @@ public class TANTRUMP01 : Bot
             Direction = e.Direction,
             Speed = e.Speed,
             Distance = DistanceTo(e.X, e.Y),
+            Bearing = BearingTo(e.X, e.Y),
             LastSeenTurn = TurnNumber
         };
 
@@ -138,9 +143,11 @@ public class TANTRUMP01 : Bot
 
     private void SweepRadar()
     {
-        if (target == null)
+        if (target == null || IsTargetStale())
         {
-            SetTurnRadarRight(360);
+            // Radar sweep: saat belum ada target atau target hilang, radar terus berputar.
+            // Greedy choice: cari informasi dulu karena tanpa scan bot tidak bisa aim atau menjaga jarak.
+            SetTurnRadarRight(RadarSweepDegrees);
             return;
         }
 
@@ -154,6 +161,8 @@ public class TANTRUMP01 : Bot
             return;
         }
 
+        // Lock radar: setelah musuh terlihat, fokuskan radar ke posisi terakhir target.
+        // Faktor 1.8 memberi sweep kecil melewati target agar tracking lebih stabil.
         var radarBearing = RadarBearingTo(target.X, target.Y);
         SetTurnRadarLeft(radarBearing * 1.8);
     }
@@ -237,6 +246,16 @@ public class TANTRUMP01 : Bot
 
     private void MoveByState()
     {
+        // Prioritas greedy:
+        // 1. Jika musuh terlalu dekat, pilih aksi bertahan terbaik saat ini: menjauh.
+        // 2. Jika jarak aman, lanjutkan movement menyerang/lateral.
+        // 3. Jika tidak ada target, bergerak aman sambil radar sweep mencari musuh.
+        if (target != null && target.Distance < DangerDistance)
+        {
+            MoveAwayFromCloseTarget();
+            return;
+        }
+
         if (NearWall())
         {
             TurnAwayFromWall();
@@ -272,6 +291,30 @@ public class TANTRUMP01 : Bot
         TargetSpeed = Energy < 18 ? 8 * moveDirection : 6.5 * moveDirection;
     }
 
+    private void MoveAwayFromCloseTarget()
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        // Anti ditempel/ramming: saat musuh masuk jarak bahaya, arah utama adalah
+        // 180 derajat dari posisi musuh supaya bot tidak maju menabrak target.
+        var enemyDirection = DirectionTo(target.X, target.Y);
+        var escapeDirection = NormalizeAbsoluteAngle(enemyDirection + 180);
+
+        if (NearWall() || WouldEndNearWall(escapeDirection, EscapeDistance))
+        {
+            // Jika arah kabur akan menabrak tembok, pilih belokan alternatif ke tengah arena.
+            var centerDirection = DirectionTo(ArenaWidth / 2.0, ArenaHeight / 2.0);
+            var lateralDirection = NormalizeAbsoluteAngle(enemyDirection + 110 * moveDirection);
+            escapeDirection = WouldEndNearWall(centerDirection, EscapeDistance) ? lateralDirection : centerDirection;
+        }
+
+        SetTurnLeft(CalcDeltaAngle(escapeDirection, Direction));
+        TargetSpeed = 8;
+    }
+
     private bool ShouldSwitchTarget(ScannedBotEvent e)
     {
         if (target == null || target.Id == e.ScannedBotId)
@@ -297,15 +340,32 @@ public class TANTRUMP01 : Bot
 
     private void ForgetStaleTarget()
     {
-        if (target != null && TurnNumber - target.LastSeenTurn > TargetMemoryTurns)
+        if (target != null && IsTargetStale())
         {
             target = null;
         }
     }
 
+    private bool IsTargetStale()
+    {
+        return target != null && TurnNumber - target.LastSeenTurn > TargetMemoryTurns;
+    }
+
     private bool NearWall()
     {
         return X < WallMargin || X > ArenaWidth - WallMargin || Y < WallMargin || Y > ArenaHeight - WallMargin;
+    }
+
+    private bool WouldEndNearWall(double direction, double distance)
+    {
+        var radians = direction * Math.PI / 180;
+        var nextX = X + Math.Cos(radians) * distance;
+        var nextY = Y + Math.Sin(radians) * distance;
+
+        return nextX < WallMargin ||
+               nextX > ArenaWidth - WallMargin ||
+               nextY < WallMargin ||
+               nextY > ArenaHeight - WallMargin;
     }
 
     private void TurnAwayFromWall()
@@ -331,6 +391,7 @@ public class TANTRUMP01 : Bot
         public double Direction { get; set; }
         public double Speed { get; set; }
         public double Distance { get; set; }
+        public double Bearing { get; set; }
         public int LastSeenTurn { get; set; }
     }
 
