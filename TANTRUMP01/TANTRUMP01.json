@@ -1,0 +1,11 @@
+{
+  "name": "TANTRUMP01",
+  "version": "0.1",
+  "authors": ["TANTRUMP01 Team"],
+  "description": "Competition template bot with radar lock, adaptive fire power, lateral movement, and simple target memory",
+  "homepage": "",
+  "gameTypes": ["classic", "melee", "1v1"],
+  "countryCodes": ["id"],
+  "platform": ".Net 9.0",
+  "programmingLang": "C# 10.0"
+}
