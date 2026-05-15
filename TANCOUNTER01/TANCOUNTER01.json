@@ -1,0 +1,11 @@
+{
+  "name": "TANCOUNTER01",
+  "version": "1.0",
+  "authors": ["Crisman Turnip"],
+  "description": "Greedy safe distance counter attack bot with wall escape, radar sweep, and adaptive fire power",
+  "homepage": "",
+  "gameTypes": ["classic", "melee", "1v1"],
+  "countryCodes": ["id"],
+  "platform": ".Net 9.0",
+  "programmingLang": "C# 10.0"
+}
