@@ -1,0 +1,11 @@
+{
+  "name": "Satsugi",
+  "version": "1.0",
+  "authors": ["Crisman Turnip"],
+  "description": "Hebi-inspired aggressive ramming bot focused on close-range bullet damage and collision pressure",
+  "homepage": "",
+  "gameTypes": ["classic", "melee", "1v1"],
+  "countryCodes": ["id", "jp"],
+  "platform": ".Net 9.0",
+  "programmingLang": "C# 10.0"
+}
