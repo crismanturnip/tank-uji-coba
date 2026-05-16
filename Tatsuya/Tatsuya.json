@@ -1,0 +1,11 @@
+{
+  "name": "Tatsuya",
+  "version": "1.0",
+  "authors": ["Crisman Turnip"],
+  "description": "LowestEnergyChaser-inspired aggressive bot that targets the lowest-energy enemy for quick eliminations",
+  "homepage": "",
+  "gameTypes": ["classic", "melee", "1v1"],
+  "countryCodes": ["id"],
+  "platform": ".Net 9.0",
+  "programmingLang": "C# 10.0"
+}
